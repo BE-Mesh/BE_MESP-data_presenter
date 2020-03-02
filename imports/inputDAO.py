@@ -77,8 +77,6 @@ class InputDAO(metaclass=Singleton):
                 files_list_filtered.append(dir + '/' + file_entry)
 
 
-        print("loc_input_file_list ", files_list_filtered)
-
         return 0, files_list_filtered
 
 
