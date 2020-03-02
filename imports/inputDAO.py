@@ -18,7 +18,7 @@ class InputDAO(metaclass=Singleton):
 
 
         if len(sys.argv) < 2:
-            err_code = '2C'  # C stands for custom
+            err_code = '1ID'  # ID stands for InputDao
             err_mess = 'MISSING INPUT DIRECTORY NAME'
             err_details = 'please pass the name of the directory containing the input files'
             raise ValueError(err_code, err_mess, err_details)
@@ -26,7 +26,7 @@ class InputDAO(metaclass=Singleton):
         input_dir_name_check = bool(re.match('^[a-zA-Z0-9\-_]+$', str(sys.argv[1])))
 
         if not input_dir_name_check:
-            err_code = '3C'  # C stands for custom
+            err_code = '2ID'  # ID stands for InputDao
             err_mess = 'INVALID NAME FOR AN INPUT DIR'
             err_details = 'please pass a name containing only letters/numbers/-/_  and no whitespace '
             raise ValueError(err_code, err_mess, err_details)
@@ -37,7 +37,7 @@ class InputDAO(metaclass=Singleton):
         input_dir_path = Path(script_root_path_str + "/results/2-ds-results/" + str(sys.argv[1])).absolute()
 
         if not input_dir_path.is_dir():
-            err_code = '4C'  # C stands for custom
+            err_code = '3ID'  # ID stands for InputDao
             err_mess = 'NO DIRECTORY FOUND '
             err_details = 'no directory found at ' + str(input_dir_path)
             raise ValueError(err_code, err_mess, err_details)
@@ -50,7 +50,7 @@ class InputDAO(metaclass=Singleton):
         subdirectories.pop(0) #removes __input_dir_path
 
         if len(subdirectories) < 1:
-            err_code = '5C'  # C stands for custom
+            err_code = '4ID'  # ID stands for InputDao
             err_mess = 'NO SUBDIRECTORIES FOUND '
             err_details = 'no subdirectories found at ' + str(self.__input_dir_path)
             raise ValueError(err_code, err_mess, err_details)

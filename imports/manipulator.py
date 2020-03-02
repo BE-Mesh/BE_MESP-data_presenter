@@ -1,20 +1,25 @@
 from .utilities.singleton import Singleton
 from .utilities.databaseManager import DatabaseManager
 from .inputDAO import InputDAO
+from .outputWriter import OutputWriter
+from .utilities.logger import Logger
+
 
 
 class Manipulator(metaclass=Singleton):
     def __init__(self):
 
         inputdao = InputDAO()
-        subdir =inputdao.getSubdirectoriesList()
+        ow = OutputWriter()
 
         subdirectories_list= inputdao.getSubdirectoriesList()
 
         for subdir in subdirectories_list:
+            lg = Logger()
+            lg.log('AAA', 'lamadonna: ' + subdir)
             res = self.manageSubcase(subdir)
             if res[0] != 0:
-                err_code = '3C'  # C stands for custom
+                err_code = '1MAN'  # MAN stands for Manipulator
                 err_mess = 'ERROR WHILE PROCESSING SUBDIR: ' + str(subdir)
                 err_details = 'ErroDetails: ' + res[1]
                 raise Exception(err_code, err_mess, err_details)
