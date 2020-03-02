@@ -2,15 +2,15 @@ from .utilities.singleton import Singleton
 from pathlib import Path
 import sys
 import re
-from os import walk
+import os
 
 
 
-class InputRetriever(metaclass=Singleton):
+class InputDAO(metaclass=Singleton):
     def __init__(self):
 
         self.__input_dir_path = self.__input_dir_path_validator()[1]
-        self.__input_db_list = self.__retrieve_db_files_list()[1]
+        self.__input_subdirectories_list = self.__retrieve_subdirectories_list()[1]
 
 
 
@@ -44,30 +44,53 @@ class InputRetriever(metaclass=Singleton):
 
         return 0, str(input_dir_path)
 
-    def __retrieve_input_db_list(self):
+    def __retrieve_subdirectories_list(self):
 
-        f_l_t = []
-        for (dirpath, dirnames, filenames) in walk(self.__input_dir_path):
-            f_l_t.extend(filenames)
-            break
+        subdirectories = [x[0] for x in os.walk(self.__input_dir_path)]
+        subdirectories.pop(0) #removes __input_dir_path
 
-        loc_input_file_list = []
+        if len(subdirectories) < 1:
+            err_code = '5C'  # C stands for custom
+            err_mess = 'NO SUBDIRECTORIES FOUND '
+            err_details = 'no subdirectories found at ' + str(self.__input_dir_path)
+            raise ValueError(err_code, err_mess, err_details)
 
-        for file_entry in f_l_t:
-            name_check = bool(re.match('^(?!\.).*(\.csv)$', file_entry))
+        return 0,subdirectories
+
+
+    def getFilesInDirectory(self,dir):
+
+        if dir not in self.__input_subdirectories_list:
+            return 1,'InputDAO: directory must be one of the subdirectories of input folder'
+
+        files_list= []
+
+        for (dirpath, dirnames, filenames) in os.walk(dir):
+            files_list.extend(filenames)
+
+
+            files_list_filtered = []
+
+        for file_entry in files_list:
+            name_check = bool(re.match('^(?!\.).*(\.db)$', file_entry))
             if name_check:
-                loc_input_file_list.append(self.__input_dir_path + '/' + file_entry)
-
-        print('__input_dir_path ',self.__input_dir_path)
-        print("loc_input_file_list ",loc_input_file_list)
+                files_list_filtered.append(dir + '/' + file_entry)
 
 
-        return 0,loc_input_file_list
+        print("loc_input_file_list ", files_list_filtered)
+
+        return 0, files_list_filtered
+
+
+
+
+
+
 
 
     def getInputDirPath(self):
         return self.__input_dir_path
 
 
-    def getInputDBList(self):
-        return self.__input_db_list
+    def getSubdirectoriesList(self):
+        return self.__input_subdirectories_list
