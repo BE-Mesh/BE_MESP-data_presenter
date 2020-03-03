@@ -24,11 +24,11 @@ class Manipulator(metaclass=Singleton):
                 err_details = 'ErroDetails: ' + res[1]
                 raise Exception(err_code, err_mess, err_details)
 
-
+            #todo: MANAGE SUBCASE
 
 
     def manageSubcase(self,subdir):
-
+        logger = Logger()
         inputdao = InputDAO()
 
         res = inputdao.getFilesInDirectory(subdir)
@@ -39,14 +39,42 @@ class Manipulator(metaclass=Singleton):
         if len(res[1]) < 1:
             return 2,'Empty subdirectory'
 
-        for db_file in res[1]:
+        convergence_times_per_file_list = []
+        num_sent_update_msg_per_file_list = []
 
+        for db_file in res[1]:
             #todo manage result!!!
             res = self.__performDbOperations(db_file)
 
-            print('REEEEES ',res)
+            #todo: now this code is unreachable, implement error management in __performDbOperations()
+            if res[0] != 0:
+                err_code = '6MAN'  # MAN stands for Manipulator
+                err_mess = 'ERROR WHILE PARSING FILE'
+                err_details = 'ErroDetails: ' + str(res[1])
+                raise Exception(err_code, err_mess, err_details)
 
-        return 0, None
+
+            if res[1]:
+                logger.log('FileConvergence','file ' + db_file.split('/')[-1] + ' in ' + subdir.split('/')[-1]
+                           + ' CONVERGES  with max_convergence_time: ' + str(res[2])
+                           + ' and  total_number_sent_update_msg: ' + str(res[3]))
+
+                convergence_times_per_file_list.append(res[2])
+                num_sent_update_msg_per_file_list.append(res[3])
+
+            else:
+                logger.log('FileConvergence', 'file ' + db_file.split('/')[-1] + ' in ' + subdir.split('/')[-1]
+                           + ' DOES NOT CONVERGE')
+
+
+        if len(convergence_times_per_file_list) == 0:
+            logger.log('SubcaseFailure', 'subdirectory ' + subdir.split('/')[-1]
+                       + ' does not contain any convergent db file (run), DROPPED')
+            return 0,False
+        else:
+            #todo compute mean and variance of both convergenze_times and sent advertisement packets
+
+            return 0, True
 
 
 #SELECT * FROM events JOIN typeEvent_message_sent ON events.event_id = typeEvent_message_sent.event_id WHERE( events.submitter_id='AAAAA' and events.type = 0 and typeEvent_message_sent.message_type=0)
@@ -117,8 +145,6 @@ class Manipulator(metaclass=Singleton):
             err_mess = 'ERROR WHILE getting Earliest Device-up Event from DB: '
             err_details = 'ErrorDetails: ' + res[1]
             raise Exception(err_code, err_mess, err_details)
-
-        print('#### ',res[1])
 
         earliest_device_up_timestamp = res[1][0][2]
         max_convergence_time = int(max(highest_convercence_times_list)) - int(earliest_device_up_timestamp)

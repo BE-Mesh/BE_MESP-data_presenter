@@ -2,9 +2,8 @@ from .singleton import Singleton
 from .outputDirectoryManager import OutputDirectoryManager
 
 
-#todo
 class Logger(metaclass=Singleton):
-    #todo
+
     def __init__(self):
         output_dir = OutputDirectoryManager().getOutputDir()
         self.__log_file_path = output_dir + '/' + 'log.txt'
