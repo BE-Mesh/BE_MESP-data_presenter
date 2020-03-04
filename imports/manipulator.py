@@ -44,6 +44,13 @@ class Manipulator(metaclass=Singleton):
 
                 subcases_list.append(sc)
 
+
+        #todo: insert log with final subcases' values
+
+        if len(subcases_list) == 0:
+            return 0,False
+
+
         res = ow.createSubcaseXtimestampPlot(subcases_list)
         if res[0] != 0:
             err_code = '6MAN'  # MAN stands for Manipulator
@@ -57,6 +64,8 @@ class Manipulator(metaclass=Singleton):
             err_mess = 'ERROR WHILE CREATING SUBCASE_x_NUM_UPDATE_PACKETS PLOT'
             err_details = 'ErroDetails: ' + res[1]
             raise Exception(err_code, err_mess, err_details)
+
+        return 0,True
 
 
     def __manageSubcase(self,subdir):
@@ -99,12 +108,16 @@ class Manipulator(metaclass=Singleton):
                            + ' DOES NOT CONVERGE')
 
 
-        if len(convergence_times_per_file_list) == 0:
+        #convert from microseconds to milliseconds
+
+        ms_convergence_times_per_file_list = [int(x/1000) for x in convergence_times_per_file_list]
+
+        if len(ms_convergence_times_per_file_list) == 0:
             logger.log('SubcaseFailure', 'subdirectory ' + subdir.split('/')[-1]
                        + ' does not contain any convergent db file (run), DROPPED')
             return 0,False
-        elif len(convergence_times_per_file_list) == 1:
-            mean_convergence_times = convergence_times_per_file_list[0]
+        elif len(ms_convergence_times_per_file_list) == 1:
+            mean_convergence_times = ms_convergence_times_per_file_list[0]
             stdev_convergence_times = 0
 
             mean_num_sent_update_msg = num_sent_update_msg_per_file_list[0]
@@ -118,11 +131,10 @@ class Manipulator(metaclass=Singleton):
 
 
         else:
-            mean_convergence_times = round(statistics.mean(convergence_times_per_file_list),1)
-            stdev_convergence_times = round(statistics.stdev(convergence_times_per_file_list),1)
+            mean_convergence_times = round(statistics.mean(ms_convergence_times_per_file_list),1)
+            stdev_convergence_times = round(statistics.stdev(ms_convergence_times_per_file_list),1)
             mean_num_sent_update_msg = round(statistics.mean(num_sent_update_msg_per_file_list),1)
             stdev_num_sent_update_msg = round(statistics.stdev(num_sent_update_msg_per_file_list),1)
-            #todo compute mean and variance of both convergenze_times and sent advertisement packets
             logger.log('SubcaseSuccess', 'subdirectory ' + subdir.split('/')[-1]
                        + 'CONVERGES with values:  mean_convergence_times ' + str(mean_convergence_times) +
                        ' - stdev_convergence_times ' + str(stdev_convergence_times) +
@@ -150,7 +162,7 @@ class Manipulator(metaclass=Singleton):
         print('USERLIST: ',userList)
 
         total_num_sent_update_msg = 0
-        highest_convercence_times_list=[]
+        users_convercence_times_list=[]
 
         for user in userList:
             res = db_manager.getSentMessageEvents(user,0)
@@ -191,7 +203,7 @@ class Manipulator(metaclass=Singleton):
             if len(convergence_times) == 0:
                 return 0,False
 
-            highest_convercence_times_list.append(max(convergence_times))
+            users_convercence_times_list.append(min(convergence_times))
 
         res = db_manager.getEarliestDeviceUpEvent()
 
@@ -202,9 +214,9 @@ class Manipulator(metaclass=Singleton):
             raise Exception(err_code, err_mess, err_details)
 
         earliest_device_up_timestamp = res[1][0][2]
-        max_convergence_time = int(max(highest_convercence_times_list)) - int(earliest_device_up_timestamp)
+        max_convergence_time = int(max(users_convercence_times_list)) - int(earliest_device_up_timestamp)
 
-        print('first device-up ts: ', res[1][0][2], ' - max convergence time: ', max(highest_convercence_times_list),
+        print('first device-up ts: ', res[1][0][2], ' - max convergence time: ', max(users_convercence_times_list),
               ' - total_num_sent_update_msg: ', total_num_sent_update_msg, ' - max_convergence_time: ',max_convergence_time)
 
         return 0,True,max_convergence_time,total_num_sent_update_msg

@@ -10,8 +10,17 @@ def main():
         raise ValueError(err_code, err_mess, err_details)
 
     manipulator= Manipulator()
-    manipulator.performManipulation()
-    print('END')
+    res = manipulator.performManipulation()
+
+    #this case is never reached, since performManipulation() throws errors if fails, it is just the skeleton
+    if res[0] != 0:
+        print('Error occurred while performing data manipulation')
+
+    else:
+        if res[1]:
+            print('Termination: SUCCESS')
+        else:
+            print('Termination FAILURE')
 
 
 
