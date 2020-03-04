@@ -1,4 +1,5 @@
 from .utilities.singleton import Singleton
+from .utilities.subcase import Subcase
 from .utilities.outputDirectoryManager import OutputDirectoryManager
 
 #plotly
@@ -23,7 +24,11 @@ class OutputWriter(metaclass=Singleton):
 
     def createSubcaseXtimestampPlot(self,subcases_list):
         print('generating SubcaseXtimestamp Plot... ')
+
         #todo: check if subcases_list is a list of Subcase objects
+
+        if not self.__isPlottable(subcases_list):
+            return 1,'Passed object is not plottable'
 
         trace = go.Scatter(x=[sc.getName() for sc in subcases_list],  # ['zero meters','one meter','three meters','five meters'],
                            y=[sc.getAverageConvergenceTime() for sc in subcases_list],
@@ -62,6 +67,9 @@ class OutputWriter(metaclass=Singleton):
     def createSubcaseXnumUpdatePackets(self,subcases_list):
         print('generating SubcaseXnumUpdatePackets Plot... ')
         #todo: check if subcases_list is a list of Subcase objects
+
+        if not self.__isPlottable(subcases_list):
+            return 1,'Passed object is not plottable'
 
         trace = go.Scatter(x=[sc.getName() for sc in subcases_list],
                            # ['zero meters','one meter','three meters','five meters'],
@@ -102,3 +110,16 @@ class OutputWriter(metaclass=Singleton):
         return 0,None
 
 
+    def __isPlottable(self,hypotetic_obj_list):
+        check = isinstance(hypotetic_obj_list, list)
+        if check:
+            check = True #dummy
+            for obj in hypotetic_obj_list:
+                elem_methods = [method_name for method_name in dir(obj) if callable(getattr(obj, method_name))]
+                check = all(elem in elem_methods  for elem in
+                            ['getName','getAverageConvergenceTime','getStdevConvergenceTime',
+                             'getAverageSentUpdatePackets','getStdevSentUpdatePackets'])
+                if not check:
+                    break
+
+        return check
