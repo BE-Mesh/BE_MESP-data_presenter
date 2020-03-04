@@ -10,8 +10,8 @@ def main():
         raise ValueError(err_code, err_mess, err_details)
 
     manipulator= Manipulator()
-
-
+    manipulator.performManipulation()
+    print('END')
 
 
 

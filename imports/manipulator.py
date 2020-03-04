@@ -1,33 +1,65 @@
 from .utilities.singleton import Singleton
+from .utilities.subcase import Subcase
 from .utilities.databaseManager import DatabaseManager
 from .inputDAO import InputDAO
 from .outputWriter import OutputWriter
 from .utilities.logger import Logger
+import statistics
 
 
 
 class Manipulator(metaclass=Singleton):
     def __init__(self):
+        pass
+
+
+
+
+    def performManipulation(self):
+        logger = Logger()
 
         inputdao = InputDAO()
         ow = OutputWriter()
 
-        subdirectories_list= inputdao.getSubdirectoriesList()
+        subdirectories_list = inputdao.getSubdirectoriesList()
+
+        logger.log('Subcases List', 'Subdirectories: ' + str(subdirectories_list))
+
+        subcases_list = []
 
         for subdir in subdirectories_list:
-            print('*** start subdir: ',subdir)
-            lg = Logger()
-            res = self.manageSubcase(subdir)
+            print('*** start subdir: ', subdir)
+            subcase_name = subdir.split('/')[-1]
+            res = self.__manageSubcase(subdir)
             if res[0] != 0:
                 err_code = '1MAN'  # MAN stands for Manipulator
                 err_mess = 'ERROR WHILE PROCESSING SUBDIR: ' + str(subdir)
                 err_details = 'ErroDetails: ' + res[1]
                 raise Exception(err_code, err_mess, err_details)
 
-            #todo: MANAGE SUBCASE
+            if res[1]:
+                sc = Subcase(subcase_name,
+                             average_convergence_time=res[2][0], stdev_convergence_time=res[2][1],
+                             average_sent_update_packets=res[3][0], stdev_sent_update_packets=res[3][1])
+
+                subcases_list.append(sc)
+
+        res = ow.createSubcaseXtimestampPlot(subcases_list)
+        if res[0] != 0:
+            err_code = '6MAN'  # MAN stands for Manipulator
+            err_mess = 'ERROR WHILE CREATING SUBCASE_x_TIMESTAMP PLOT'
+            err_details = 'ErroDetails: ' + res[1]
+            raise Exception(err_code, err_mess, err_details)
+
+        res = ow.createSubcaseXnumUpdatePackets(subcases_list)
+        if res[0] != 0:
+            err_code = '7MAN'  # MAN stands for Manipulator
+            err_mess = 'ERROR WHILE CREATING SUBCASE_x_NUM_UPDATE_PACKETS PLOT'
+            err_details = 'ErroDetails: ' + res[1]
+            raise Exception(err_code, err_mess, err_details)
 
 
-    def manageSubcase(self,subdir):
+    def __manageSubcase(self,subdir):
         logger = Logger()
         inputdao = InputDAO()
 
@@ -71,10 +103,33 @@ class Manipulator(metaclass=Singleton):
             logger.log('SubcaseFailure', 'subdirectory ' + subdir.split('/')[-1]
                        + ' does not contain any convergent db file (run), DROPPED')
             return 0,False
-        else:
-            #todo compute mean and variance of both convergenze_times and sent advertisement packets
+        elif len(convergence_times_per_file_list) == 1:
+            mean_convergence_times = convergence_times_per_file_list[0]
+            stdev_convergence_times = 0
 
-            return 0, True
+            mean_num_sent_update_msg = num_sent_update_msg_per_file_list[0]
+            stdev_num_sent_update_msg = 0
+            logger.log('SubcaseSuccess', 'subdirectory ' + subdir.split('/')[-1]
+                       + ' CONVERGES JUST ONE TIME with: ' +
+                       ' convergence time ' + str(mean_convergence_times) +
+                       ' - num_sent_update_msg' + str(mean_num_sent_update_msg))
+
+            return 0, True,[mean_convergence_times,stdev_convergence_times],[mean_num_sent_update_msg,stdev_num_sent_update_msg]
+
+
+        else:
+            mean_convergence_times = round(statistics.mean(convergence_times_per_file_list),1)
+            stdev_convergence_times = round(statistics.stdev(convergence_times_per_file_list),1)
+            mean_num_sent_update_msg = round(statistics.mean(num_sent_update_msg_per_file_list),1)
+            stdev_num_sent_update_msg = round(statistics.stdev(num_sent_update_msg_per_file_list),1)
+            #todo compute mean and variance of both convergenze_times and sent advertisement packets
+            logger.log('SubcaseSuccess', 'subdirectory ' + subdir.split('/')[-1]
+                       + 'CONVERGES with values:  mean_convergence_times ' + str(mean_convergence_times) +
+                       ' - stdev_convergence_times ' + str(stdev_convergence_times) +
+                       ' - mean_num_sent_update_msg ' + str(mean_num_sent_update_msg) +
+                       ' - stdev_num_sent_update_msg ' + str(stdev_num_sent_update_msg))
+
+            return 0, True,[mean_convergence_times,stdev_convergence_times],[mean_num_sent_update_msg,stdev_num_sent_update_msg]
 
 
 #SELECT * FROM events JOIN typeEvent_message_sent ON events.event_id = typeEvent_message_sent.event_id WHERE( events.submitter_id='AAAAA' and events.type = 0 and typeEvent_message_sent.message_type=0)
